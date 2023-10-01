@@ -47,6 +47,8 @@ async function run() {
         const Course = client.db('ITUNIVERSE').collection('Courses');
         const carts = client.db('ITUNIVERSE').collection('cart');
         const users = client.db('ITUNIVERSE').collection('users');
+        const Enroll = client.db('ITUNIVERSE').collection('Enroll');
+        const Progress = client.db('ITUNIVERSE').collection('Progress');
 
         app.post('/jwt', (req, res) => {
             const user = req.body;
@@ -61,12 +63,53 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result)
         })
+        app.get('/progress', async (req, res) => {
+            const cursor = Progress.find();
+            const result = await cursor.toArray();
+            res.send(result)
+        })
+
+        app.patch('/progress/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const filter = { _id: new ObjectId(id) }
+            const updateDoc = { $set: { complete: 100 } }
+            const result = await Progress.updateOne(filter, updateDoc)
+            res.send(result)
+          })
+        app.get('/enroll', async (req, res) => {
+            const cursor = Enroll.find();
+            const result = await cursor.toArray();
+            res.send(result)
+        })
         // -----------------------------Adding to cart-----------------------------
         app.post('/cart', async (req, res) => {
             const item = req.body
             const result = await carts.insertOne(item);
             res.send(result)
         })
+        // -----------------------------Adding to Enroll list-----------------------------
+        app.post('/enrol', async (req, res) => {
+            const item = req.body
+            const result = await Enroll.insertOne(item);
+            res.send(result)
+        })
+
+
+        app.post('/progress', async (req, res) => {
+            const item = req.body
+            const result = await Progress.insertOne(item);
+            res.send(result)
+        })
+
+
+        app.delete('/cart/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await carts.deleteOne(query);
+            res.send(result)
+          })
+
         //---------------------=========Getting the cart==================---------------------
         app.get('/cart', verifyJwt, async (req, res) => {
             const email = req.query.email;
@@ -97,6 +140,33 @@ async function run() {
             const result = await users.insertOne(item);
             res.send(result)
         })
+        // -------------------------------------Verifying Instructor-------------------------
+        app.get('/user/instructor/:email', verifyJwt, async (req, res) => {
+            const email = req.params.email
+            if (req.decode.email !== email) {
+              res.send({ Instructor: false })
+            }      
+            const query = { email: email }
+                  const prouser = await users.findOne(query)
+            const result = { instructor: prouser?.role === 'instructor' }
+            res.send(result)
+          })
+// ----------------------------------coursedetail getting -----------------------
+app.get('/classes/:id', async(req, res) => {
+    const id = req.params.id;
+    console.log(id)
+    const query = {_id: new ObjectId(id)}
+    const user = await Course.findOne(query);
+    res.send(user);
+})
+app.get('/enroll/:id', async(req, res) => {
+    const id = req.params.id;
+    console.log(id)
+    const query = {_id: new ObjectId(id)}
+    const user = await Enroll.findOne(query);
+    res.send(user);
+})
+
 
         await client.db("admin").command({ ping: 1 });
         //console.log("Pinged your deployment. You successfully connected to MongoDB!");
